@@ -1255,15 +1255,17 @@ def simulateCS(model_description, fmu, start_time, stop_time, relative_tolerance
 
         step_size = next_communication_point - time
 
-        input.apply(time, continuous=True, discrete=use_event_mode, after_event=use_event_mode)
-
         if is_fmi1:
+
+            input.apply(time)
 
             fmu.doStep(currentCommunicationPoint=time, communicationStepSize=step_size)
 
             time = next_communication_point
 
         elif is_fmi2:
+
+            input.apply(time)
 
             try:
                 fmu.doStep(currentCommunicationPoint=time, communicationStepSize=step_size)
@@ -1284,6 +1286,8 @@ def simulateCS(model_description, fmu, start_time, stop_time, relative_tolerance
                     raise exception
 
         else:
+            
+            input.apply(time, continuous=True, discrete=use_event_mode, after_event=use_event_mode)
 
             event_encountered, terminate_simulation, early_return, last_successful_time = fmu.doStep(currentCommunicationPoint=time, communicationStepSize=step_size)
 
