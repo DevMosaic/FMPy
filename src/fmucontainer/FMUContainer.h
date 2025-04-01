@@ -28,7 +28,6 @@ typedef struct {
 typedef struct {
 
     FMIInstance* instance;
-    FMIMajorVersion fmiMajorVersion;
 
 #ifdef _WIN32
     HANDLE thread;

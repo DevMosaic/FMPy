@@ -80,7 +80,7 @@ static void* instanceDoStep(void *arg) {
 
 
 static void logFMIMessage(FMIInstance *instance, FMIStatus status, const char *category, const char *message) {
-    
+
     if (!instance) {
         return;
     }
@@ -90,11 +90,11 @@ static void logFMIMessage(FMIInstance *instance, FMIStatus status, const char *c
     if (!s || !s->logMessage) {
         return;
     }
-    
+
     size_t message_len = strlen(message);
     size_t instanceName_len = strlen(instance->name);
     size_t total_len = message_len + instanceName_len + 5;
-    
+
     char *buf = malloc(total_len);
 
     snprintf(buf, total_len, "[%s]: %s", instance->name, message);
@@ -147,30 +147,184 @@ static void logFunctionCall(FMIInstance *instance, FMIStatus status, const char 
     }
 }
 
-FMIStatus setVariable(
-    FMIMajorVersion fmiMajorVersion,
-    FMIVariableType variableType,
+#define CHECK_STATUS(S) status = S; if (status > FMIWarning) goto END
+
+FMIStatus getVariable(
     FMIInstance *instance,
-    void* valueReference,
+    FMIVariableType variableType,
+    const void* valueReference,
     void* value) {
+
+    FMIStatus status = FMIOK;
+
     switch (variableType) {
     case FMIFloat32Type:
+        CHECK_STATUS(FMI3GetFloat32(instance, valueReference, 1, value, 1));
+        break;
     case FMIFloat64Type:
+        switch (instance->fmiMajorVersion) {
+        case FMIMajorVersion2:
+            fmi2Real v;
+            CHECK_STATUS(FMI2GetReal(instance, valueReference, 1, &v));
+            *((fmi3Float64 *) value) = (fmi3Float64) v;
+            break;
+        case FMIMajorVersion3:
+            CHECK_STATUS(FMI3GetFloat64(instance, valueReference, 1, value, 1));
+            break;
+        default:
+            break;
+        }
+        break;
     case FMIInt8Type:
+        CHECK_STATUS(FMI3GetInt8(instance, valueReference, 1, value, 1));
+        break;
     case FMIUInt8Type:
+        CHECK_STATUS(FMI3GetUInt8(instance, valueReference, 1, value, 1));
+        break;
     case FMIInt16Type:
+        CHECK_STATUS(FMI3GetInt16(instance, valueReference, 1, value, 1));
+        break;
     case FMIUInt16Type:
+        CHECK_STATUS(FMI3GetUInt16(instance, valueReference, 1, value, 1));
+        break;
     case FMIInt32Type:
+        switch (instance->fmiMajorVersion) {
+        case FMIMajorVersion2:
+            fmi2Integer v;
+            CHECK_STATUS(FMI2GetInteger(instance, valueReference, 1, &v));
+            *((fmi3Int32 *) value) = (fmi3Int32) v;
+            break;
+        case FMIMajorVersion3:
+            CHECK_STATUS(FMI3GetInt32(instance, valueReference, 1, value, 1));
+            break;
+        default:
+            break;
+        }
     case FMIUInt32Type:
+        CHECK_STATUS(FMI3GetUInt32(instance, valueReference, 1, value, 1));
+        break;
     case FMIInt64Type:
+        CHECK_STATUS(FMI3GetInt64(instance, valueReference, 1, value, 1));
+        break;
     case FMIUInt64Type:
+        CHECK_STATUS(FMI3GetUInt64(instance, valueReference, 1, value, 1));
+        break;
     case FMIBooleanType:
+        switch (instance->fmiMajorVersion) {
+        case FMIMajorVersion2:
+            fmi2Boolean v;
+            CHECK_STATUS(FMI2GetBoolean(instance, valueReference, 1, &v));
+            *((fmi3Boolean *) value) = (fmi3Boolean) v;
+            break;
+        case FMIMajorVersion3:
+            CHECK_STATUS(FMI3GetBoolean(instance, valueReference, 1, value, 1));
+            break;
+        default:
+            break;
+        }
     case FMIStringType:
+        switch (instance->fmiMajorVersion) {
+        case FMIMajorVersion2:
+            CHECK_STATUS(FMI2GetString(instance, valueReference, 1, value));
+            break;
+        case FMIMajorVersion3:
+            CHECK_STATUS(FMI3GetString(instance, valueReference, 1, value, 1));
+            break;
+        default:
+            break;
+        }
+    // TODO: implement
     case FMIBinaryType:
+        status = FMIError;
+        break;
     case FMIClockType:
+        status = FMIError;
+        break;
     default:
-        ;
+        status = FMIError;
     }
+
+END:
+    return status;
+}
+
+FMIStatus setVariable(
+    FMIInstance *instance,
+    FMIVariableType variableType,
+    const FMIValueReference* valueReference,
+    void* value) {
+
+    FMIStatus status = FMIOK;
+
+    switch (variableType) {
+    case FMIFloat32Type:
+        CHECK_STATUS(FMI3SetFloat32(instance, valueReference, 1, value, 1));
+        break;
+    case FMIFloat64Type:
+        if (instance->fmiMajorVersion == FMIMajorVersion2) {
+            fmi2Real v = *((fmi3Float64 *) value);
+            CHECK_STATUS(FMI2SetReal(instance, valueReference, 1, &v));
+        } else if (instance->fmiMajorVersion == FMIMajorVersion3) {
+            CHECK_STATUS(FMI3SetFloat64(instance, valueReference, 1, value, 1));
+        }
+        break;
+    case FMIInt8Type:
+        CHECK_STATUS(FMI3SetInt8(instance, valueReference, 1, value, 1));
+        break;
+    case FMIUInt8Type:
+        CHECK_STATUS(FMI3SetUInt8(instance, valueReference, 1, value, 1));
+        break;
+    case FMIInt16Type:
+        CHECK_STATUS(FMI3SetInt16(instance, valueReference, 1, value, 1));
+        break;
+    case FMIUInt16Type:
+        CHECK_STATUS(FMI3SetUInt16(instance, valueReference, 1, value, 1));
+        break;
+    case FMIInt32Type:
+        if (instance->fmiMajorVersion == FMIMajorVersion2) {
+            fmi2Integer v = *((fmi3Int32 *) value);
+            CHECK_STATUS(FMI2SetInteger(instance, valueReference, 1, &v));
+        } else if (instance->fmiMajorVersion == FMIMajorVersion3) {
+            CHECK_STATUS(FMI3SetInt32(instance, valueReference, 1, value, 1));
+        }
+        break;
+    case FMIUInt32Type:
+        CHECK_STATUS(FMI3SetUInt32(instance, valueReference, 1, value, 1));
+        break;
+    case FMIInt64Type:
+        CHECK_STATUS(FMI3SetInt64(instance, valueReference, 1, value, 1));
+        break;
+    case FMIUInt64Type:
+        CHECK_STATUS(FMI3SetUInt64(instance, valueReference, 1, value, 1));
+        break;
+    case FMIBooleanType:
+        if (instance->fmiMajorVersion == FMIMajorVersion2) {
+            fmi2Boolean v = *((fmi3Boolean *) value);
+            CHECK_STATUS(FMI2SetBoolean(instance, valueReference, 1, &v));
+        } else if (instance->fmiMajorVersion == FMIMajorVersion3) {
+            CHECK_STATUS(FMI3SetBoolean(instance, valueReference, 1, value, 1));
+        }
+        break;
+    case FMIStringType:
+        if (instance->fmiMajorVersion == FMIMajorVersion2) {
+            CHECK_STATUS(FMI2SetString(instance, valueReference, 1, value));
+        } else if (instance->fmiMajorVersion == FMIMajorVersion3) {
+            CHECK_STATUS(FMI3SetString(instance, valueReference, 1, value, 1));
+        }
+        break;
+    // TODO: implement
+    case FMIBinaryType:
+        status = FMIError;
+        break;
+    case FMIClockType:
+        status = FMIError;
+        break;
+    default:
+        status = FMIError;
+    }
+
+END:
+    return status;
 }
 
 System* instantiateSystem(
@@ -223,11 +377,12 @@ System* instantiateSystem(
 
         mpack_node_t componentFmiVersion = mpack_node_map_cstr(component, "fmiVersion");
         char* _componentFmiVersion = mpack_node_cstr_alloc(componentFmiVersion, 1024);
-        
+
+        FMIMajorVersion componentFmiMajorVersion;
         if (*_componentFmiVersion == '2') {
-            c->fmiMajorVersion = FMIMajorVersion2;
+            componentFmiMajorVersion = FMIMajorVersion2;
         } else if (*_componentFmiVersion == '3') {
-            c->fmiMajorVersion = FMIMajorVersion3;
+            componentFmiMajorVersion = FMIMajorVersion3;
         } else {
             return NULL;
         }
@@ -254,10 +409,15 @@ System* instantiateSystem(
 
         char libraryPath[4069] = "";
 
-        if (c->fmiMajorVersion == FMIMajorVersion2) {
+        switch (componentFmiMajorVersion) {
+        case FMIMajorVersion2:
             FMIPlatformBinaryPath(unzipdir, _modelIdentifier, FMIMajorVersion2, libraryPath, 4096);
-        } else if (c->fmiMajorVersion == FMIMajorVersion3) {
+            break;
+        case FMIMajorVersion3:
             FMIPlatformBinaryPath(unzipdir, _modelIdentifier, FMIMajorVersion3, libraryPath, 4096);
+            break;
+        default:
+            break;
         }
 
         FMIInstance* m = FMICreateInstance(_name, logFMIMessage, loggingOn ? logFunctionCall : NULL);
@@ -269,29 +429,21 @@ System* instantiateSystem(
 
         m->userData = s;
 
-        if (c->fmiMajorVersion == FMIMajorVersion2) {
+        switch (componentFmiMajorVersion) {
+        case FMIMajorVersion2:
             if (FMI2Instantiate(m, componentResourcesDir, fmi2CoSimulation, _guid, visible, loggingOn) > FMIWarning) {
                 return NULL;
             }
-        } else if (c->fmiMajorVersion == FMIMajorVersion3) {
-            // TODO: Add support for some FMI3 options if necessary 
+            break;
+        case FMIMajorVersion3:
+            // TODO: Add support for some FMI3 options if necessary
             //           (hasEventMode=false, mightReturnEarlyFromDoStep=true, etc.)
-            if (
-                FMI3InstantiateCoSimulation(
-                    m,
-                    _guid,
-                    componentResourcesDir,
-                    visible,
-                    loggingOn,
-                    true,
-                    false,
-                    NULL,
-                    0,
-                    NULL
-                ) > FMIWarning
-            ) {
+            if (FMI3InstantiateCoSimulation(m, _guid, componentResourcesDir, visible, loggingOn, true, false, NULL, 0, NULL ) > FMIWarning) {
                 return NULL;
             }
+            break;
+        default:
+            break;
         }
 
         c->instance = m;
@@ -363,7 +515,7 @@ System* instantiateSystem(
 
         s->variables[i].size = mpack_node_array_length(components);
         s->variables[i].ci = calloc(s->variables[i].size, sizeof(size_t));
-        s->variables[i].vr = calloc(s->variables[i].size, sizeof(fmi2ValueReference));
+        s->variables[i].vr = calloc(s->variables[i].size, sizeof(FMIValueReference));
 
         for (size_t j = 0; j < s->variables[i].size; j++) {
 
@@ -371,33 +523,34 @@ System* instantiateSystem(
             mpack_node_t valueReference = mpack_node_array_at(valueReferences, j);
 
             const size_t ci = mpack_node_u64(component);
-            const fmi2ValueReference vr = mpack_node_u32(valueReference);
+            const FMIValueReference vr = mpack_node_u32(valueReference);
 
             if (hasStartValue) {
 
-                fmi2Status status = fmi2OK;
+                FMIStatus status = FMIOK;
                 FMIInstance* m = s->components[ci]->instance;
 
+                // TODO: Unpack start values for other FMI3 types
                 switch (variableType) {
                 case FMIRealType: {
-                    const fmi2Real value = mpack_node_double(start);
-                    status = FMI2SetReal(m, &vr, 1, &value);
+                    const fmi3Float64 value = mpack_node_double(start);
+                    status = setVariable(m, variableType, &vr, &value);
                     break;
                 }
                 case FMIIntegerType: {
-                    const fmi2Integer value = mpack_node_int(start);
-                    status = FMI2SetInteger(m, &vr, 1, &value);
+                    const fmi3Int32 value = mpack_node_int(start);
+                    status = setVariable(m, variableType, &vr, &value);
                     break;
                 }
                 case FMIBooleanType: {
-                    const fmi2Boolean value = mpack_node_bool(start);
-                    status = FMI2SetBoolean(m, &vr, 1, &value);
+                    const fmi3Boolean value = mpack_node_bool(start);
+                    status = setVariable(m, variableType, &vr, &value);
                     break;
                 }
                 case FMIStringType: {
-                    const fmi2String value = mpack_node_cstr_alloc(start, 2048);
-                    status = FMI2SetString(m, &vr, 1, &value);
-                    MPACK_FREE((void*)value);
+                    const char* value = mpack_node_cstr_alloc(start, 2048);
+                    status = setVariable(m, variableType, &vr, &value);
+                    MPACK_FREE((void *) value);
                     break;
                 }
                 default:
@@ -428,8 +581,6 @@ System* instantiateSystem(
     return s;
 }
 
-#define CHECK_STATUS(S) status = S; if (status > FMIWarning) goto END
-
 FMIStatus doStep(
     System* s,
     double  currentCommunicationPoint,
@@ -437,40 +588,20 @@ FMIStatus doStep(
     bool    noSetFMUStatePriorToCurrentPoint) {
 
     FMIStatus status = FMIOK;
+    void* value = malloc(2048);
+    if (value == NULL) {
+        status = FMIError;
+        return status;
+    }
 
     for (size_t i = 0; i < s->nConnections; i++) {
 
-        fmi2Real realValue;
-        fmi2Integer integerValue;
-        fmi2Boolean booleanValue;
-        fmi2String stringValue;
         Connection* k = &(s->connections[i]);
         FMIInstance* m1 = s->components[k->startComponent]->instance;
         FMIInstance* m2 = s->components[k->endComponent]->instance;
-        fmi2ValueReference vr1 = k->startValueReference;
-        fmi2ValueReference vr2 = k->endValueReference;
 
-        switch (k->type) {
-        case FMIRealType:
-            CHECK_STATUS(FMI2GetReal(m1, &(vr1), 1, &realValue));
-            CHECK_STATUS(FMI2SetReal(m2, &(vr2), 1, &realValue));
-            break;
-        case FMIIntegerType:
-            CHECK_STATUS(FMI2GetInteger(m1, &(vr1), 1, &integerValue));
-            CHECK_STATUS(FMI2SetInteger(m2, &(vr2), 1, &integerValue));
-            break;
-        case FMIBooleanType:
-            CHECK_STATUS(FMI2GetBoolean(m1, &(vr1), 1, &booleanValue));
-            CHECK_STATUS(FMI2SetBoolean(m2, &(vr2), 1, &booleanValue));
-            break;
-        case FMIStringType:
-            CHECK_STATUS(FMI2GetString(m1, &(vr1), 1, &stringValue));
-            CHECK_STATUS(FMI2SetString(m2, &(vr2), 1, &stringValue));
-            break;
-
-        default:
-            break;
-        }
+        CHECK_STATUS(getVariable(m1, k->type, &(k->startValueReference), value));
+        CHECK_STATUS(setVariable(m2, k->type, &(k->endValueReference), value));
     }
 
     if (s->parallelDoStep) {
@@ -495,7 +626,7 @@ FMIStatus doStep(
         for (size_t i = 0; i < s->nComponents; i++) {
             Component* component = s->components[i];
             bool waitForThread = true;
-            fmi2Status status;
+            FMIStatus status;
 
             while (waitForThread) {
 #ifdef _WIN32
@@ -519,13 +650,30 @@ FMIStatus doStep(
     else {
 
         for (size_t i = 0; i < s->nComponents; i++) {
+
             FMIInstance* m = s->components[i]->instance;
-            CHECK_STATUS(FMI2DoStep(m, currentCommunicationPoint, communicationStepSize, noSetFMUStatePriorToCurrentPoint));
+
+            switch (m->fmiMajorVersion) {
+            case FMIMajorVersion2:
+                CHECK_STATUS(FMI2DoStep(m, currentCommunicationPoint, communicationStepSize, noSetFMUStatePriorToCurrentPoint));
+                break;
+            case FMIMajorVersion3:
+                fmi3Boolean eventHandlingNeeded;
+                fmi3Boolean terminateSimulation;
+                fmi3Boolean earlyReturn;
+                fmi3Float64 lastSuccessfulTime;
+
+                CHECK_STATUS(FMI3DoStep(m, currentCommunicationPoint, communicationStepSize, noSetFMUStatePriorToCurrentPoint, &eventHandlingNeeded, &terminateSimulation, &earlyReturn, &lastSuccessfulTime));
+                break;
+            default:
+                break;
+            }
         }
 
     }
 
 END:
+    free(value);
     return status;
 }
 
@@ -537,7 +685,16 @@ FMIStatus terminateSystem(System* s) {
 
         Component* component = s->components[i];
 
-        CHECK_STATUS(FMI2Terminate(component->instance));
+        switch (component->instance->fmiMajorVersion) {
+        case FMIMajorVersion2:
+            CHECK_STATUS(FMI2Terminate(component->instance));
+            break;
+        case FMIMajorVersion3:
+            CHECK_STATUS(FMI3Terminate(component->instance));
+            break;
+        default:
+            break;
+        }
 
         if (s->parallelDoStep) {
 #ifdef _WIN32
@@ -565,8 +722,19 @@ FMIStatus resetSystem(System* s) {
     s->time = 0;
 
     for (size_t i = 0; i < s->nComponents; i++) {
+
         FMIInstance* m = s->components[i]->instance;
-        CHECK_STATUS(FMI2Reset(m));
+
+        switch (m->fmiMajorVersion) {
+        case FMIMajorVersion2:
+            CHECK_STATUS(FMI2Reset(m));
+            break;
+        case FMIMajorVersion3:
+            CHECK_STATUS(FMI3Reset(m));
+            break;
+        default:
+            break;
+        }
     }
 END:
     return status;
@@ -575,9 +743,20 @@ END:
 void freeSystem(System* s) {
 
     for (size_t i = 0; i < s->nComponents; i++) {
+
         Component* component = s->components[i];
         FMIInstance* m = component->instance;
-        FMI2FreeInstance(m);
+
+        switch (m->fmiMajorVersion) {
+        case FMIMajorVersion2:
+            FMI2FreeInstance(m);
+            break;
+        case FMIMajorVersion3:
+            FMI3FreeInstance(m);
+            break;
+        default:
+            break;
+        }
         FMIFreeInstance(m);
         if (s->parallelDoStep) {
 #ifdef _WIN32
@@ -591,6 +770,6 @@ void freeSystem(System* s) {
         free(component);
     }
 
-    free((void*)s->instanceName);
+    free((void *) s->instanceName);
     free(s);
 }
