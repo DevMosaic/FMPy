@@ -150,6 +150,8 @@ def create_fmu_container(configuration, output_filename):
         'FMI.h',
         'FMI2.c',
         'FMI2.h',
+        'FMI3.c',
+        'FMI3.h',
         'FMUContainer.c',
         'FMUContainer.h',
         'mpack.h',
@@ -196,6 +198,7 @@ def create_fmu_container(configuration, output_filename):
 
         c = {
             'name': component.name,
+            'fmiVersion': model_description.fmiVersion,
             'guid': model_description.guid,
             'modelIdentifier': model_identifier,
         }
@@ -311,6 +314,7 @@ def create_fmu_container(configuration, output_filename):
         f.write(packed)
 
     shutil.make_archive(base_filename, 'zip', unzipdir)
+    print(unzipdir, base_filename, output_filename)
 
     if output_filename.is_file():
         os.remove(output_filename)

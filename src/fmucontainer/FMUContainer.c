@@ -22,6 +22,7 @@
 #include "fmi3FunctionTypes.h"
 
 #include "FMI2.h"
+#include "FMI3.h"
 
 #include "FMUContainer.h"
 
@@ -98,11 +99,11 @@ static void logFMIMessage(FMIInstance *instance, FMIStatus status, const char *c
 
     snprintf(buf, total_len, "[%s]: %s", instance->name, message);
 
-    switch (s->fmiVersion) {
-    case FMIVersion2:
+    switch (s->fmiMajorVersion) {
+    case FMIMajorVersion2:
         ((fmi2CallbackLogger)s->logMessage)(s->instanceEnvironment, s->instanceName, status, category, buf);
         break;
-    case FMIVersion3:
+    case FMIMajorVersion3:
         ((fmi3LogMessageCallback)s->logMessage)(s->instanceEnvironment, status, category, buf);
         break;
     default:
@@ -134,11 +135,11 @@ static void logFunctionCall(FMIInstance *instance, FMIStatus status, const char 
     vsnprintf(&buf[len], FMI_MAX_MESSAGE_LENGTH - len, message, args);
     va_end(args);
 
-    switch (s->fmiVersion) {
-    case FMIVersion2:
+    switch (s->fmiMajorVersion) {
+    case FMIMajorVersion2:
         ((fmi2CallbackLogger)s->logMessage)(s->instanceEnvironment, s->instanceName, status, "logDebug", buf);
         break;
-    case FMIVersion3:
+    case FMIMajorVersion3:
         ((fmi3LogMessageCallback)s->logMessage)(s->instanceEnvironment, status, "logDebug", buf);
         break;
     default:
@@ -147,7 +148,7 @@ static void logFunctionCall(FMIInstance *instance, FMIStatus status, const char 
 }
 
 System* instantiateSystem(
-    FMIVersion fmiVersion,
+    FMIMajorVersion fmiMajorVersion,
     const char* resourcesDir,
     const char* instanceName,
     void* logMessage,
@@ -173,7 +174,7 @@ System* instantiateSystem(
 
     System* s = calloc(1, sizeof(System));
 
-    s->fmiVersion = fmiVersion;
+    s->fmiMajorVersion = fmiMajorVersion;
     s->instanceName = strdup(instanceName);
     s->instanceEnvironment = instanceEnvironment;
     s->logMessage = logMessage;
@@ -187,10 +188,23 @@ System* instantiateSystem(
     s->components = calloc(s->nComponents, sizeof(FMIInstance*));
 
     for (size_t i = 0; i < s->nComponents; i++) {
+        Component* c = calloc(1, sizeof(Component));
+
         mpack_node_t component = mpack_node_array_at(components, i);
 
         mpack_node_t name = mpack_node_map_cstr(component, "name");
         char* _name = mpack_node_cstr_alloc(name, 1024);
+
+        mpack_node_t componentFmiVersion = mpack_node_map_cstr(component, "fmiVersion");
+        char* _componentFmiVersion = mpack_node_cstr_alloc(componentFmiVersion, 1024);
+        
+        if (*_componentFmiVersion == '2') {
+            c->fmiMajorVersion = FMIMajorVersion2;
+        } else if (*_componentFmiVersion == '3') {
+            c->fmiMajorVersion = FMIMajorVersion3;
+        } else {
+            return NULL;
+        }
 
         mpack_node_t guid = mpack_node_map_cstr(component, "guid");
         char* _guid = mpack_node_cstr_alloc(guid, 1024);
@@ -214,9 +228,14 @@ System* instantiateSystem(
 
         char libraryPath[4069] = "";
 
-        FMIPlatformBinaryPath(unzipdir, _modelIdentifier, FMIVersion2, libraryPath, 4096);
+        if (c->fmiMajorVersion == FMIMajorVersion2) {
+            FMIPlatformBinaryPath(unzipdir, _modelIdentifier, FMIMajorVersion2, libraryPath, 4096);
+        } else if (c->fmiMajorVersion == FMIMajorVersion3) {
+            FMIPlatformBinaryPath(unzipdir, _modelIdentifier, FMIMajorVersion3, libraryPath, 4096);
+        }
 
-        FMIInstance* m = FMICreateInstance(_name, libraryPath, logFMIMessage, loggingOn ? logFunctionCall : NULL);
+        FMIInstance* m = FMICreateInstance(_name, logFMIMessage, loggingOn ? logFunctionCall : NULL);
+        FMILoadPlatformBinary(m, libraryPath);
 
         if (!m) {
             return NULL;
@@ -224,10 +243,29 @@ System* instantiateSystem(
 
         m->userData = s;
 
-        Component* c = calloc(1, sizeof(Component));
-
-        if (FMI2Instantiate(m, componentResourcesUri, fmi2CoSimulation, _guid, visible, loggingOn) > FMIWarning) {
-            return NULL;
+        if (c->fmiMajorVersion == FMIMajorVersion2) {
+            if (FMI2Instantiate(m, componentResourcesUri, fmi2CoSimulation, _guid, visible, loggingOn) > FMIWarning) {
+                return NULL;
+            }
+        } else if (c->fmiMajorVersion == FMIMajorVersion3) {
+            // TODO: Add support for some FMI3 options if necessary 
+            //           (hasEventMode=false, mightReturnEarlyFromDoStep=true, etc.)
+            if (
+                FMI3InstantiateCoSimulation(
+                    m,
+                    _guid,
+                    componentResourcesUri,
+                    visible,
+                    loggingOn,
+                    true,
+                    false,
+                    NULL,
+                    0,
+                    NULL
+                ) > FMIWarning
+            ) {
+                return NULL;
+            }
         }
 
         c->instance = m;

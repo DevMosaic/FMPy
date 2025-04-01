@@ -48,7 +48,7 @@ fmi3Instance fmi3InstantiateCoSimulation(
     fmi3LogMessageCallback         logMessage,
     fmi3IntermediateUpdateCallback intermediateUpdate) {
 
-    return instantiateSystem(FMIVersion3, resourcePath, instanceName, logMessage, instanceEnvironment, loggingOn, visible);
+    return instantiateSystem(FMIMajorVersion3, resourcePath, instanceName, logMessage, instanceEnvironment, loggingOn, visible);
 }
 
 fmi3Instance fmi3InstantiateScheduledExecution(

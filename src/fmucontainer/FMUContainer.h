@@ -28,6 +28,7 @@ typedef struct {
 typedef struct {
 
     FMIInstance* instance;
+    FMIMajorVersion fmiMajorVersion;
 
 #ifdef _WIN32
     HANDLE thread;
@@ -47,7 +48,7 @@ typedef struct {
 
 typedef struct {
 
-    FMIVersion fmiVersion;
+    FMIMajorVersion fmiMajorVersion;
 
     const char* instanceName;
 
@@ -72,7 +73,7 @@ typedef struct {
 
 
 System* instantiateSystem(
-    FMIVersion fmiVersion,
+    FMIMajorVersion fmiMajorVersion,
     const char* resourcesDir,
     const char* instanceName,
     void* logMessage,

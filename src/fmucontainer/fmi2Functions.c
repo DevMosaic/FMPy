@@ -64,7 +64,7 @@ fmi2Component fmi2Instantiate(fmi2String instanceName,
 
     FMIURIToPath(fmuResourceLocation, resourcesDir, 4096);
 
-    return instantiateSystem(FMIVersion2, resourcesDir, instanceName, functions->logger, functions->componentEnvironment, loggingOn, visible);
+    return instantiateSystem(FMIMajorVersion2, resourcesDir, instanceName, functions->logger, functions->componentEnvironment, loggingOn, visible);
 }
 
 void fmi2FreeInstance(fmi2Component c) {
