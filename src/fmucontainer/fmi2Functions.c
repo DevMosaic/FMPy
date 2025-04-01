@@ -46,7 +46,7 @@ END:
 fmi2Component fmi2Instantiate(fmi2String instanceName,
     fmi2Type fmuType,
     fmi2String fmuGUID,
-    fmi2String fmuResourceLocation,
+    fmi2String fmuResourceDir,
     const fmi2CallbackFunctions* functions,
     fmi2Boolean visible,
     fmi2Boolean loggingOn) {
@@ -60,11 +60,7 @@ fmi2Component fmi2Instantiate(fmi2String instanceName,
         return NULL;
     }
 
-    char resourcesDir[4096] = "";
-
-    FMIURIToPath(fmuResourceLocation, resourcesDir, 4096);
-
-    return instantiateSystem(FMIMajorVersion2, resourcesDir, instanceName, functions->logger, functions->componentEnvironment, loggingOn, visible);
+    return instantiateSystem(FMIMajorVersion2, fmuResourceDir, instanceName, functions->logger, functions->componentEnvironment, loggingOn, visible);
 }
 
 void fmi2FreeInstance(fmi2Component c) {

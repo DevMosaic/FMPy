@@ -53,8 +53,10 @@ add_library(FMUContainer SHARED
   ../fmpy/c-code/fmi3PlatformTypes.h
   ../thirdparty/Reference-FMUs/include/FMI.h
   ../thirdparty/Reference-FMUs/include/FMI2.h
+  ../thirdparty/Reference-FMUs/include/FMI3.h
   ../thirdparty/Reference-FMUs/src/FMI.c
   ../thirdparty/Reference-FMUs/src/FMI2.c
+  ../thirdparty/Reference-FMUs/src/FMI3.c
   ../thirdparty/mpack/src/mpack/mpack.h
   ../thirdparty/mpack/src/mpack/mpack-common.c
   ../thirdparty/mpack/src/mpack/mpack-expect.c

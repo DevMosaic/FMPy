@@ -147,6 +147,32 @@ static void logFunctionCall(FMIInstance *instance, FMIStatus status, const char 
     }
 }
 
+FMIStatus setVariable(
+    FMIMajorVersion fmiMajorVersion,
+    FMIVariableType variableType,
+    FMIInstance *instance,
+    void* valueReference,
+    void* value) {
+    switch (variableType) {
+    case FMIFloat32Type:
+    case FMIFloat64Type:
+    case FMIInt8Type:
+    case FMIUInt8Type:
+    case FMIInt16Type:
+    case FMIUInt16Type:
+    case FMIInt32Type:
+    case FMIUInt32Type:
+    case FMIInt64Type:
+    case FMIUInt64Type:
+    case FMIBooleanType:
+    case FMIStringType:
+    case FMIBinaryType:
+    case FMIClockType:
+    default:
+        ;
+    }
+}
+
 System* instantiateSystem(
     FMIMajorVersion fmiMajorVersion,
     const char* resourcesDir,
@@ -244,7 +270,9 @@ System* instantiateSystem(
         m->userData = s;
 
         if (c->fmiMajorVersion == FMIMajorVersion2) {
-            if (FMI2Instantiate(m, componentResourcesUri, fmi2CoSimulation, _guid, visible, loggingOn) > FMIWarning) {
+            printf("%s", componentResourcesDir);
+            if (FMI2Instantiate(m, componentResourcesDir, fmi2CoSimulation, _guid, visible, loggingOn) > FMIWarning) {
+                printf("booooo");
                 return NULL;
             }
         } else if (c->fmiMajorVersion == FMIMajorVersion3) {
@@ -254,7 +282,7 @@ System* instantiateSystem(
                 FMI3InstantiateCoSimulation(
                     m,
                     _guid,
-                    componentResourcesUri,
+                    componentResourcesDir,
                     visible,
                     loggingOn,
                     true,
@@ -377,11 +405,13 @@ System* instantiateSystem(
                 default:
                     // TODO: log this
                     // logMessage(NULL, instanceName, fmi2Fatal, "logError", "Unknown type ID for variable index %d: %d.", j, variableType);
+                    printf("oh noes :< 1 %d\n", variableType);
                     return NULL;
                     break;
                 }
 
                 if (status > fmi2Warning) {
+                    printf("oh noes :< 2\n");
                     return NULL;
                 }
             }
