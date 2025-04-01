@@ -47,7 +47,7 @@ typedef struct {
 
 typedef struct {
 
-    FMIVersion fmiVersion;
+    FMIMajorVersion fmiMajorVersion;
 
     const char* instanceName;
 
@@ -72,7 +72,7 @@ typedef struct {
 
 
 System* instantiateSystem(
-    FMIVersion fmiVersion,
+    FMIMajorVersion fmiMajorVersion,
     const char* resourcesDir,
     const char* instanceName,
     void* logMessage,

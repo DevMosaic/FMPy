@@ -10,7 +10,10 @@
   generationDateAndTime="{{generationDateAndTime}}"
   variableNamingConvention="structured">
 
-  <CoSimulation modelIdentifier="FMUContainer"/>
+  <CoSimulation
+    modelIdentifier="FMUContainer"
+    hasEventMode="true"
+    />
 
 {% if system.unitDefinitions %}
   <UnitDefinitions>

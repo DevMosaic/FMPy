@@ -72,28 +72,25 @@ FMI_TYPES = {
 
     # FMI 3.0 variable types
     'Float32': 0,
-    'DiscreteFloat32': 1,
-    'Float64': 2,
-    'DiscreteFloat64': 3,
-    'Int8': 4,
-    'UInt8': 5,
-    'Int16': 6,
-    'UInt16': 7,
-    'Int32': 8,
-    'UInt32': 9,
-    'Int64': 10,
-    'UInt64': 11,
-    'Boolean': 12,
-    'String': 13,
-    'Binary': 14,
-    'Clock': 15,
+    'Float64': 1,
+    'Int8': 2,
+    'UInt8': 3,
+    'Int16': 4,
+    'UInt16': 5,
+    'Int32': 6,
+    'UInt32': 7,
+    'Int64': 8,
+    'UInt64': 9,
+    'Boolean': 10,
+    'String': 11,
+    'Binary': 12,
+    'Clock': 13,
 
-    'Enumeration': 8,
+    'Enumeration': 6,
 
     # Aliases for FMI 1.0 and 2.0
-    'Real': 2,
-    'DiscreteReal': 3,
-    'Integer': 8
+    'Real': 1,
+    'Integer': 6,
 }
 
 
@@ -150,6 +147,8 @@ def create_fmu_container(configuration, output_filename):
         'FMI.h',
         'FMI2.c',
         'FMI2.h',
+        'FMI3.c',
+        'FMI3.h',
         'FMUContainer.c',
         'FMUContainer.h',
         'mpack.h',
@@ -196,6 +195,7 @@ def create_fmu_container(configuration, output_filename):
 
         c = {
             'name': component.name,
+            'fmiVersion': model_description.fmiVersion,
             'guid': model_description.guid,
             'modelIdentifier': model_identifier,
         }
@@ -311,6 +311,7 @@ def create_fmu_container(configuration, output_filename):
         f.write(packed)
 
     shutil.make_archive(base_filename, 'zip', unzipdir)
+    print(unzipdir, base_filename, output_filename)
 
     if output_filename.is_file():
         os.remove(output_filename)

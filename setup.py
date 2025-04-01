@@ -31,6 +31,8 @@ try:
         root / 'thirdparty' / 'Reference-FMUs' / 'include' / 'FMI.h',
         root / 'thirdparty' / 'Reference-FMUs' / 'src' / 'FMI2.c',
         root / 'thirdparty' / 'Reference-FMUs' / 'include' / 'FMI2.h',
+        root / 'thirdparty' / 'Reference-FMUs' / 'src' / 'FMI3.c',
+        root / 'thirdparty' / 'Reference-FMUs' / 'include' / 'FMI3.h',
         root / 'src' / 'fmucontainer' / 'fmi2Functions.c',
         root / 'src' / 'fmucontainer' / 'fmi3Functions.c',
         root / 'src' / 'fmucontainer' / 'FMUContainer.c',

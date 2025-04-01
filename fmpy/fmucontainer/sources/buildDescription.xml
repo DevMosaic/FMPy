@@ -5,6 +5,7 @@
     <SourceFileSet language="C99">
       <SourceFile name="FMI.c"/>
       <SourceFile name="FMI2.c"/>
+      <SourceFile name="FMI3.c"/>
       <SourceFile name="fmi3Functions.c"/>
       <SourceFile name="FMUContainer.c"/>
       <SourceFile name="mpack-common.c"/>
