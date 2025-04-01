@@ -19,8 +19,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include "fmi3FunctionTypes.h"
-
 #include "FMI2.h"
 #include "FMI3.h"
 
@@ -163,7 +161,7 @@ FMIStatus getVariable(
         break;
     case FMIFloat64Type:
         switch (instance->fmiMajorVersion) {
-        case FMIMajorVersion2:
+        case FMIMajorVersion2: ;
             fmi2Real v;
             CHECK_STATUS(FMI2GetReal(instance, valueReference, 1, &v));
             *((fmi3Float64 *) value) = (fmi3Float64) v;
@@ -189,7 +187,7 @@ FMIStatus getVariable(
         break;
     case FMIInt32Type:
         switch (instance->fmiMajorVersion) {
-        case FMIMajorVersion2:
+        case FMIMajorVersion2: ;
             fmi2Integer v;
             CHECK_STATUS(FMI2GetInteger(instance, valueReference, 1, &v));
             *((fmi3Int32 *) value) = (fmi3Int32) v;
@@ -211,7 +209,7 @@ FMIStatus getVariable(
         break;
     case FMIBooleanType:
         switch (instance->fmiMajorVersion) {
-        case FMIMajorVersion2:
+        case FMIMajorVersion2: ;
             fmi2Boolean v;
             CHECK_STATUS(FMI2GetBoolean(instance, valueReference, 1, &v));
             *((fmi3Boolean *) value) = (fmi3Boolean) v;
@@ -657,7 +655,7 @@ FMIStatus doStep(
             case FMIMajorVersion2:
                 CHECK_STATUS(FMI2DoStep(m, currentCommunicationPoint, communicationStepSize, noSetFMUStatePriorToCurrentPoint));
                 break;
-            case FMIMajorVersion3:
+            case FMIMajorVersion3: ;
                 fmi3Boolean eventHandlingNeeded;
                 fmi3Boolean terminateSimulation;
                 fmi3Boolean earlyReturn;
