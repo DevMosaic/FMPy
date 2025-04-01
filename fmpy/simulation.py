@@ -290,7 +290,7 @@ class Input(object):
                 np.asarray(np.stack(list(map(lambda n: signals[n], names))), dtype=value_type),
                 setter
             ))
-
+        
     def apply(self, time, continuous=True, discrete=True, after_event=False):
         """ Apply the input
 
@@ -417,7 +417,7 @@ class Input(object):
         i1 = i0 + 1
 
         if discrete:
-            values = table[:, i1 if after_event else i0]
+            values = table[:, i0]
             return values, np.zeros_like(values)
 
         t0 = t[i0]

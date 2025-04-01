@@ -270,9 +270,7 @@ System* instantiateSystem(
         m->userData = s;
 
         if (c->fmiMajorVersion == FMIMajorVersion2) {
-            printf("%s", componentResourcesDir);
             if (FMI2Instantiate(m, componentResourcesDir, fmi2CoSimulation, _guid, visible, loggingOn) > FMIWarning) {
-                printf("booooo");
                 return NULL;
             }
         } else if (c->fmiMajorVersion == FMIMajorVersion3) {
@@ -405,13 +403,11 @@ System* instantiateSystem(
                 default:
                     // TODO: log this
                     // logMessage(NULL, instanceName, fmi2Fatal, "logError", "Unknown type ID for variable index %d: %d.", j, variableType);
-                    printf("oh noes :< 1 %d\n", variableType);
                     return NULL;
                     break;
                 }
 
                 if (status > fmi2Warning) {
-                    printf("oh noes :< 2\n");
                     return NULL;
                 }
             }

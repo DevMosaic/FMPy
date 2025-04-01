@@ -3,6 +3,9 @@
 #include "FMI2.h"
 
 
+#define UNUSED(x) \
+    (void)(x)
+
 #define GET_SYSTEM \
     FMIStatus status = FMIOK; \
     System *s = (System *)instance; \
@@ -106,7 +109,12 @@ fmi3Status fmi3ExitInitializationMode(fmi3Instance instance) {
     return status;
 }
 
-fmi3Status fmi3EnterEventMode(fmi3Instance instance) { NOT_IMPLEMENTED; }
+fmi3Status fmi3EnterEventMode(fmi3Instance instance) {
+
+    GET_SYSTEM;
+
+    return FMIOK;
+}
 
 fmi3Status fmi3Terminate(fmi3Instance instance) { 
     
@@ -655,7 +663,16 @@ fmi3Status fmi3UpdateDiscreteStates(fmi3Instance instance,
     fmi3Boolean* valuesOfContinuousStatesChanged,
     fmi3Boolean* nextEventTimeDefined,
     fmi3Float64* nextEventTime) {
-    NOT_IMPLEMENTED;
+    
+    GET_SYSTEM;
+
+    *discreteStatesNeedUpdate = fmi3False;
+    *terminateSimulation = fmi3False;
+    *nominalsOfContinuousStatesChanged = fmi3False;
+    *valuesOfContinuousStatesChanged = fmi3False;
+    *nextEventTimeDefined = fmi3False;
+
+    return FMIOK;
 }
 
 /***************************************************
@@ -717,7 +734,12 @@ fmi3Status fmi3GetNumberOfContinuousStates(fmi3Instance instance,
 Types for Functions for Co-Simulation
 ****************************************************/
 
-fmi3Status fmi3EnterStepMode(fmi3Instance instance) { NOT_IMPLEMENTED; }
+fmi3Status fmi3EnterStepMode(fmi3Instance instance) {
+    
+    GET_SYSTEM;
+
+    return FMIOK;
+}
 
 fmi3Status fmi3GetOutputDerivatives(fmi3Instance instance,
     const fmi3ValueReference valueReferences[],
