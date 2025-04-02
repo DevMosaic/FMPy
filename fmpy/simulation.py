@@ -417,7 +417,7 @@ class Input(object):
         i1 = i0 + 1
 
         if discrete:
-            values = table[:, i0]
+            values = table[:, i1 if (after_event and isclose(time, t[i0])) else i0]
             return values, np.zeros_like(values)
 
         t0 = t[i0]
