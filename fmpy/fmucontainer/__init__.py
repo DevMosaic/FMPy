@@ -86,6 +86,7 @@ FMI_TYPES = {
     'Binary': 12,
     'Clock': 13,
 
+    # TODO: FMI3.0 spec 2.2.7.2 specifies Enumeration should be Int64
     'Enumeration': 6,
 
     # Aliases for FMI 1.0 and 2.0

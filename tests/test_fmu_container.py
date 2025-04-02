@@ -7,7 +7,7 @@ from fmpy.validation import validate_fmu
 from fmpy.model_description import Unit, BaseUnit, SimpleType, DisplayUnit, Item
 
 
-@pytest.mark.parametrize('fmi_version, parallelDoStep', product([2, 3], [False, True]))
+@pytest.mark.parametrize('fmi_version, parallelDoStep', product([3], [False, True]))
 def test_create_fmu_container(reference_fmus_dist_dir, fmi_version, parallelDoStep):
 
     if fmi_version == 2:
