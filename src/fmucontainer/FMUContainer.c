@@ -19,6 +19,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include "fmi3Functions.h"
+
 #include "FMI2.h"
 #include "FMI3.h"
 
