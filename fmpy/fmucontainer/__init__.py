@@ -141,6 +141,12 @@ def create_fmu_container(configuration, output_filename):
     shutil.copytree(basedir / 'documentation', unzipdir / 'documentation')
 
     os.mkdir(unzipdir / 'resources')
+
+    """
+    Sources don't need to be packaged as long as we include the prebuilt .so/.dll's below.
+    TODO: When Reference-FMUs is fixed (in particular, FMI3.c/.h not including fmi3Functions.h),
+        we can add this back so we can re-compile the FMU directly from sources if necessary.
+
     os.mkdir(unzipdir / 'sources')
 
     sources = [
@@ -175,6 +181,7 @@ def create_fmu_container(configuration, output_filename):
 
     for file in sources:
         shutil.copyfile(basedir / 'sources' / file, unzipdir / 'sources' / file)
+    """ 
 
     data = {
         'parallelDoStep': configuration.parallelDoStep,
