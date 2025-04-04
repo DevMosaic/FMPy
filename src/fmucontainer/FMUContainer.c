@@ -19,6 +19,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include "fmi3Functions.h"
+
 #include "FMI2.h"
 #include "FMI3.h"
 
@@ -170,6 +172,7 @@ FMIStatus getVariable(
             CHECK_STATUS(FMI3GetFloat64(instance, valueReference, 1, value, 1));
             break;
         default:
+            status = FMIError;
             break;
         }
         break;
@@ -196,8 +199,10 @@ FMIStatus getVariable(
             CHECK_STATUS(FMI3GetInt32(instance, valueReference, 1, value, 1));
             break;
         default:
+            status = FMIError;
             break;
         }
+        break;
     case FMIUInt32Type:
         CHECK_STATUS(FMI3GetUInt32(instance, valueReference, 1, value, 1));
         break;
@@ -218,8 +223,10 @@ FMIStatus getVariable(
             CHECK_STATUS(FMI3GetBoolean(instance, valueReference, 1, value, 1));
             break;
         default:
+            status = FMIError;
             break;
         }
+        break;
     case FMIStringType:
         switch (instance->fmiMajorVersion) {
         case FMIMajorVersion2:
@@ -229,8 +236,10 @@ FMIStatus getVariable(
             CHECK_STATUS(FMI3GetString(instance, valueReference, 1, value, 1));
             break;
         default:
+            status = FMIError;
             break;
         }
+        break;
     // TODO: implement
     case FMIBinaryType:
         status = FMIError;
@@ -259,11 +268,17 @@ FMIStatus setVariable(
         CHECK_STATUS(FMI3SetFloat32(instance, valueReference, 1, value, 1));
         break;
     case FMIFloat64Type:
-        if (instance->fmiMajorVersion == FMIMajorVersion2) {
+        switch (instance->fmiMajorVersion) {
+        case FMIMajorVersion2: ;
             fmi2Real v = *((fmi3Float64 *) value);
             CHECK_STATUS(FMI2SetReal(instance, valueReference, 1, &v));
-        } else if (instance->fmiMajorVersion == FMIMajorVersion3) {
+            break;
+        case FMIMajorVersion3:
             CHECK_STATUS(FMI3SetFloat64(instance, valueReference, 1, value, 1));
+            break;
+        default:
+            status = FMIError;
+            break;
         }
         break;
     case FMIInt8Type:
@@ -279,11 +294,17 @@ FMIStatus setVariable(
         CHECK_STATUS(FMI3SetUInt16(instance, valueReference, 1, value, 1));
         break;
     case FMIInt32Type:
-        if (instance->fmiMajorVersion == FMIMajorVersion2) {
+        switch (instance->fmiMajorVersion) {
+        case FMIMajorVersion2: ;
             fmi2Integer v = *((fmi3Int32 *) value);
             CHECK_STATUS(FMI2SetInteger(instance, valueReference, 1, &v));
-        } else if (instance->fmiMajorVersion == FMIMajorVersion3) {
+            break;
+        case FMIMajorVersion3:
             CHECK_STATUS(FMI3SetInt32(instance, valueReference, 1, value, 1));
+            break;
+        default:
+            status = FMIError;
+            break;
         }
         break;
     case FMIUInt32Type:
@@ -296,18 +317,30 @@ FMIStatus setVariable(
         CHECK_STATUS(FMI3SetUInt64(instance, valueReference, 1, value, 1));
         break;
     case FMIBooleanType:
-        if (instance->fmiMajorVersion == FMIMajorVersion2) {
+        switch (instance->fmiMajorVersion) {
+        case FMIMajorVersion2: ;
             fmi2Boolean v = *((fmi3Boolean *) value);
             CHECK_STATUS(FMI2SetBoolean(instance, valueReference, 1, &v));
-        } else if (instance->fmiMajorVersion == FMIMajorVersion3) {
+            break;
+        case FMIMajorVersion3:
             CHECK_STATUS(FMI3SetBoolean(instance, valueReference, 1, value, 1));
+            break;
+        default:
+            status = FMIError;
+            break;
         }
         break;
     case FMIStringType:
-        if (instance->fmiMajorVersion == FMIMajorVersion2) {
+        switch (instance->fmiMajorVersion) {
+        case FMIMajorVersion2:
             CHECK_STATUS(FMI2SetString(instance, valueReference, 1, value));
-        } else if (instance->fmiMajorVersion == FMIMajorVersion3) {
+            break;
+        case FMIMajorVersion3:
             CHECK_STATUS(FMI3SetString(instance, valueReference, 1, value, 1));
+            break;
+        default:
+            status = FMIError;
+            break;
         }
         break;
     // TODO: implement

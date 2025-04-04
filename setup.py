@@ -3,13 +3,6 @@ from pathlib import Path
 
 from setuptools import setup
 
-# compile Qt UI and resources
-try:
-    from fmpy.gui import compile_resources
-    compile_resources()
-except Exception as e:
-    print(f"Failed to compile Qt UI and resources. {e}")
-
 # copy the sources of the Container FMU
 try:
     root = Path(__file__).parent
@@ -41,6 +34,13 @@ try:
         shutil.copyfile(src=file, dst=root / 'fmpy' / 'fmucontainer' / 'sources' / file.name)
 except Exception as e:
     print(f"Failed to copy sources of the Container FMU. {e}")
+
+# compile Qt UI and resources
+try:
+    from fmpy.gui import compile_resources
+    compile_resources()
+except Exception as e:
+    print(f"Failed to compile Qt UI and resources. {e}")
 
 long_description = """
 FMPy
