@@ -152,7 +152,7 @@ static void logFunctionCall(FMIInstance *instance, FMIStatus status, const char 
 FMIStatus getVariable(
     FMIInstance *instance,
     FMIVariableType variableType,
-    const void* valueReference,
+    const FMIValueReference* valueReference,
     void* value) {
 
     FMIStatus status = FMIOK;
@@ -207,7 +207,19 @@ FMIStatus getVariable(
         CHECK_STATUS(FMI3GetUInt32(instance, valueReference, 1, value, 1));
         break;
     case FMIInt64Type:
-        CHECK_STATUS(FMI3GetInt64(instance, valueReference, 1, value, 1));
+        switch (instance->fmiMajorVersion) {
+        case FMIMajorVersion2: ;
+            fmi2Integer v;
+            CHECK_STATUS(FMI2GetInteger(instance, valueReference, 1, &v));
+            *((fmi3Int64 *) value) = (fmi3Int64) v;
+            break;
+        case FMIMajorVersion3:
+            CHECK_STATUS(FMI3GetInt64(instance, valueReference, 1, value, 1));
+            break;
+        default:
+            status = FMIError;
+            break;
+        }
         break;
     case FMIUInt64Type:
         CHECK_STATUS(FMI3GetUInt64(instance, valueReference, 1, value, 1));
@@ -311,7 +323,18 @@ FMIStatus setVariable(
         CHECK_STATUS(FMI3SetUInt32(instance, valueReference, 1, value, 1));
         break;
     case FMIInt64Type:
-        CHECK_STATUS(FMI3SetInt64(instance, valueReference, 1, value, 1));
+        switch (instance->fmiMajorVersion) {
+        case FMIMajorVersion2: ;
+            fmi2Integer v = *((fmi3Int64 *) value);
+            CHECK_STATUS(FMI2SetInteger(instance, valueReference, 1, &v));
+            break;
+        case FMIMajorVersion3:
+            CHECK_STATUS(FMI3SetInt64(instance, valueReference, 1, value, 1));
+            break;
+        default:
+            status = FMIError;
+            break;
+        }
         break;
     case FMIUInt64Type:
         CHECK_STATUS(FMI3SetUInt64(instance, valueReference, 1, value, 1));

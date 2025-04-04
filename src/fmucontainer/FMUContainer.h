@@ -70,6 +70,17 @@ typedef struct {
 
 } System;
 
+FMIStatus getVariable(
+    FMIInstance *instance,
+    FMIVariableType variableType,
+    const FMIValueReference* valueReference,
+    void* value);
+
+FMIStatus setVariable(
+    FMIInstance *instance,
+    FMIVariableType variableType,
+    const FMIValueReference* valueReference,
+    void* value);
 
 System* instantiateSystem(
     FMIMajorVersion fmiMajorVersion,
