@@ -111,7 +111,7 @@ def test_create_fmu_container(reference_fmus_dist_dir, fmi_version, parallelDoSt
                 name='instance1'
             ),
             Component(
-                filename=reference_fmus_dist_dir / '2.0' / 'Feedthrough.fmu',
+                filename=reference_fmus_dist_dir / '3.0' / 'Feedthrough.fmu',
                 name='instance2'
             ),
         ],
@@ -140,10 +140,12 @@ def test_create_fmu_container(reference_fmus_dist_dir, fmi_version, parallelDoSt
         'Float64_continuous_input': 1.1,
         'Boolean_input': True,
         'Int32_input': 2,
+        'Enumeration_input': 1
     }
 
     result = simulate_fmu(filename, output=default_start_values.keys(),
-                          # debug_logging=True,
+                          use_event_mode=True, # All fmi3 FMUs are instantiated with hasEventMode right now
+                          debug_logging=True,
                           fmi_call_logger=print,
                           stop_time=1, output_interval=1)
 
@@ -164,6 +166,7 @@ def test_create_fmu_container(reference_fmus_dist_dir, fmi_version, parallelDoSt
                           start_values=custom_start_values,
                           output=['Float64_continuous_input', 'Int32_input', 'Boolean_input', 'Enumeration_input',
                                   'Float64_continuous_output', 'Int32_output', 'Boolean_output', 'Enumeration_output'],
+                          use_event_mode=True,
                           # debug_logging=True,
                           # fmi_call_logger=print,
                           stop_time=1, output_interval=1)

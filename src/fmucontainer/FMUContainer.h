@@ -39,6 +39,7 @@ typedef struct {
 
     double currentCommunicationPoint;
     double communicationStepSize;
+    bool noSetFMUStatePriorToCurrentPoint;
     FMIStatus status;
     bool doStep;
     bool terminate;

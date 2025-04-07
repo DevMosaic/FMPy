@@ -130,7 +130,20 @@ fmi3Status fmi3EnterEventMode(fmi3Instance instance) {
 
     GET_SYSTEM;
 
-    return FMIOK;
+    for (size_t i = 0; i < s->nComponents; i++) {
+        FMIInstance* m = s->components[i]->instance;
+        switch (m->fmiMajorVersion) {
+        case FMIMajorVersion2:
+            break;
+        case FMIMajorVersion3:
+            status = FMI3EnterEventMode(m);
+            break;
+        default:
+            break;
+        }
+    }
+
+    return status;
 }
 
 fmi3Status fmi3Terminate(fmi3Instance instance) { 
