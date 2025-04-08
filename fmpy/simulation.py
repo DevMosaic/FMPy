@@ -1287,7 +1287,7 @@ def simulateCS(model_description, fmu, start_time, stop_time, relative_tolerance
 
         else:
             
-            input.apply(time, continuous=True, discrete=True, after_event=use_event_mode)
+            input.apply(time, continuous=True, discrete=True, after_event=False)
 
             event_encountered, terminate_simulation, early_return, last_successful_time = fmu.doStep(currentCommunicationPoint=time, communicationStepSize=step_size)
 

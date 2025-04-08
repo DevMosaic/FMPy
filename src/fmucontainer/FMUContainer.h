@@ -39,6 +39,7 @@ typedef struct {
 
     double currentCommunicationPoint;
     double communicationStepSize;
+    bool noSetFMUStatePriorToCurrentPoint;
     FMIStatus status;
     bool doStep;
     bool terminate;
@@ -70,6 +71,17 @@ typedef struct {
 
 } System;
 
+FMIStatus getVariable(
+    FMIInstance *instance,
+    FMIVariableType variableType,
+    const FMIValueReference* valueReference,
+    void* value);
+
+FMIStatus setVariable(
+    FMIInstance *instance,
+    FMIVariableType variableType,
+    const FMIValueReference* valueReference,
+    void* value);
 
 System* instantiateSystem(
     FMIMajorVersion fmiMajorVersion,

@@ -1,6 +1,7 @@
 #include "fmi3Functions.h"
 #include "FMUContainer.h"
 #include "FMI2.h"
+#include "FMI3.h"
 
 
 #define UNUSED(x) \
@@ -82,16 +83,23 @@ fmi3Status fmi3EnterInitializationMode(fmi3Instance instance,
     fmi3Boolean stopTimeDefined,
     fmi3Float64 stopTime) {
 
-    System* s = (System*)instance;
+    GET_SYSTEM;
 
     s->time = startTime;
 
-    FMIStatus status = FMIOK;
-
     for (size_t i = 0; i < s->nComponents; i++) {
         FMIInstance* m = s->components[i]->instance;
-        status = FMI2SetupExperiment(m, toleranceDefined, tolerance, startTime, stopTimeDefined, stopTime);
-        status = FMI2EnterInitializationMode(m);
+        switch (m->fmiMajorVersion) {
+        case FMIMajorVersion2:
+            status = FMI2SetupExperiment(m, toleranceDefined, tolerance, startTime, stopTimeDefined, stopTime);
+            status = FMI2EnterInitializationMode(m);
+            break;
+        case FMIMajorVersion3:
+            status = FMI3EnterInitializationMode(m, toleranceDefined, tolerance, startTime, stopTimeDefined, stopTime);
+            break;
+        default:
+            break;
+        }
     }
 
     return status;
@@ -103,7 +111,16 @@ fmi3Status fmi3ExitInitializationMode(fmi3Instance instance) {
 
     for (size_t i = 0; i < s->nComponents; i++) {
         FMIInstance* m = s->components[i]->instance;
-        status = FMI2ExitInitializationMode(m);
+        switch (m->fmiMajorVersion) {
+        case FMIMajorVersion2:
+            status = FMI2ExitInitializationMode(m);
+            break;
+        case FMIMajorVersion3:
+            status = FMI3ExitInitializationMode(m);
+            break;
+        default:
+            break;
+        }
     }
 
     return status;
@@ -113,7 +130,20 @@ fmi3Status fmi3EnterEventMode(fmi3Instance instance) {
 
     GET_SYSTEM;
 
-    return FMIOK;
+    for (size_t i = 0; i < s->nComponents; i++) {
+        FMIInstance* m = s->components[i]->instance;
+        switch (m->fmiMajorVersion) {
+        case FMIMajorVersion2:
+            break;
+        case FMIMajorVersion3:
+            status = FMI3EnterEventMode(m);
+            break;
+        default:
+            break;
+        }
+    }
+
+    return status;
 }
 
 fmi3Status fmi3Terminate(fmi3Instance instance) { 
@@ -144,9 +174,7 @@ fmi3Status fmi3GetFloat64(fmi3Instance instance,
     fmi3Float64 values[],
     size_t nValues) {
 
-    System* s = (System*)instance;
-
-    FMIStatus status = FMIOK;
+    GET_SYSTEM;
 
     for (size_t i = 0; i < nValueReferences; i++) {
 
@@ -165,7 +193,7 @@ fmi3Status fmi3GetFloat64(fmi3Instance instance,
 
         VariableMapping vm = s->variables[j];
         FMIInstance* m = s->components[vm.ci[0]]->instance;
-        status = FMI2GetReal(m, &(vm.vr[0]), 1, &values[i]);
+        status = getVariable(m, FMIFloat64Type, &(vm.vr[0]), &values[i]);
     }
 
     return status;
@@ -209,9 +237,7 @@ fmi3Status fmi3GetInt32(fmi3Instance instance,
     fmi3Int32 values[],
     size_t nValues) {
 
-    System* s = (System*)instance;
-
-    FMIStatus status = FMIOK;
+    GET_SYSTEM;
 
     for (size_t i = 0; i < nValueReferences; i++) {
 
@@ -225,7 +251,7 @@ fmi3Status fmi3GetInt32(fmi3Instance instance,
 
         VariableMapping vm = s->variables[j];
         FMIInstance* m = s->components[vm.ci[0]]->instance;
-        status = FMI2GetInteger(m, &(vm.vr[0]), 1, &values[i]);
+        status = getVariable(m, FMIInt32Type, &(vm.vr[0]), &values[i]);
     }
 
     return status;
@@ -245,9 +271,7 @@ fmi3Status fmi3GetInt64(fmi3Instance instance,
     fmi3Int64 values[],
     size_t nValues) {
 
-    System* s = (System*)instance;
-
-    FMIStatus status = FMIOK;
+    GET_SYSTEM;
 
     for (size_t i = 0; i < nValueReferences; i++) {
 
@@ -261,9 +285,7 @@ fmi3Status fmi3GetInt64(fmi3Instance instance,
 
         VariableMapping vm = s->variables[j];
         FMIInstance* m = s->components[vm.ci[0]]->instance;
-        fmi2Integer value;
-        status = FMI2GetInteger(m, &(vm.vr[0]), 1, &value);
-        values[i] = value;
+        status = getVariable(m, FMIInt64Type, &(vm.vr[0]), &values[i]);
     }
 
     return status;
@@ -283,9 +305,7 @@ fmi3Status fmi3GetBoolean(fmi3Instance instance,
     fmi3Boolean values[],
     size_t nValues) {
 
-    System* s = (System*)instance;
-
-    FMIStatus status = FMIOK;
+    GET_SYSTEM;
 
     for (size_t i = 0; i < nValueReferences; i++) {
 
@@ -299,12 +319,7 @@ fmi3Status fmi3GetBoolean(fmi3Instance instance,
 
         VariableMapping vm = s->variables[j];
         FMIInstance* m = s->components[vm.ci[0]]->instance;
-
-        fmi2Boolean value = fmi2False;
-
-        status = FMI2GetBoolean(m, &(vm.vr[0]), 1, &value);
-
-        values[i] = value;
+        status = getVariable(m, FMIBooleanType, &(vm.vr[0]), &values[i]);
     }
 
     return status;
@@ -348,9 +363,7 @@ fmi3Status fmi3SetFloat64(fmi3Instance instance,
     const fmi3Float64 values[],
     size_t nValues) {
 
-    System* s = (System*)instance;
-
-    FMIStatus status = FMIOK;
+    GET_SYSTEM;
 
     for (size_t i = 0; i < nValueReferences; i++) {
 
@@ -362,7 +375,7 @@ fmi3Status fmi3SetFloat64(fmi3Instance instance,
 
         VariableMapping vm = s->variables[j];
         FMIInstance* m = s->components[vm.ci[0]]->instance;
-        status = FMI2SetReal(m, &(vm.vr[0]), 1, &values[i]);
+        status = setVariable(m, FMIFloat64Type, &(vm.vr[0]), &values[i]);
     }
 
     return status;
@@ -406,9 +419,7 @@ fmi3Status fmi3SetInt32(fmi3Instance instance,
     const fmi3Int32 values[],
     size_t nValues) {
 
-    System* s = (System*)instance;
-
-    FMIStatus status = FMIOK;
+    GET_SYSTEM;
 
     for (size_t i = 0; i < nValueReferences; i++) {
 
@@ -420,7 +431,7 @@ fmi3Status fmi3SetInt32(fmi3Instance instance,
 
         VariableMapping vm = s->variables[j];
         FMIInstance* m = s->components[vm.ci[0]]->instance;
-        status = FMI2SetInteger(m, &(vm.vr[0]), 1, &values[i]);
+        status = setVariable(m, FMIInt32Type, &(vm.vr[0]), &values[i]);
     }
 
     return status;
@@ -440,9 +451,7 @@ fmi3Status fmi3SetInt64(fmi3Instance instance,
     const fmi3Int64 values[],
     size_t nValues) {
 
-    System* s = (System*)instance;
-
-    FMIStatus status = FMIOK;
+    GET_SYSTEM;
 
     for (size_t i = 0; i < nValueReferences; i++) {
 
@@ -454,8 +463,7 @@ fmi3Status fmi3SetInt64(fmi3Instance instance,
 
         VariableMapping vm = s->variables[j];
         FMIInstance* m = s->components[vm.ci[0]]->instance;
-        fmi2Integer value = (fmi2Integer)values[i];
-        status = FMI2SetInteger(m, &(vm.vr[0]), 1, &value);
+        status = setVariable(m, FMIInt64Type, &(vm.vr[0]), &values[i]);
     }
 
     return status;
@@ -475,9 +483,7 @@ fmi3Status fmi3SetBoolean(fmi3Instance instance,
     const fmi3Boolean values[],
     size_t nValues) {
 
-    System* s = (System*)instance;
-
-    FMIStatus status = FMIOK;
+    GET_SYSTEM;
 
     for (size_t i = 0; i < nValueReferences; i++) {
 
@@ -490,9 +496,7 @@ fmi3Status fmi3SetBoolean(fmi3Instance instance,
         VariableMapping vm = s->variables[j];
         FMIInstance* m = s->components[vm.ci[0]]->instance;
 
-        const fmi2Boolean value = values[i];
-
-        status = FMI2SetBoolean(m, &(vm.vr[0]), 1, &value);
+        status = setVariable(m, FMIBooleanType, &(vm.vr[0]), &values[i]);
     }
 
     return status;
@@ -738,7 +742,20 @@ fmi3Status fmi3EnterStepMode(fmi3Instance instance) {
     
     GET_SYSTEM;
 
-    return FMIOK;
+    for (size_t i = 0; i < s->nComponents; i++) {
+        FMIInstance* m = s->components[i]->instance;
+        switch (m->fmiMajorVersion) {
+        case FMIMajorVersion2:
+            break;
+        case FMIMajorVersion3:
+            status = FMI3EnterStepMode(m);
+            break;
+        default:
+            break;
+        }
+    }
+
+    return status;
 }
 
 fmi3Status fmi3GetOutputDerivatives(fmi3Instance instance,

@@ -71,6 +71,7 @@ class Configuration(object):
 FMI_TYPES = {
 
     # FMI 3.0 variable types
+    # Sync with FMIVariableType definitions in FMI.h
     'Float32': 0,
     'Float64': 1,
     'Int8': 2,
@@ -86,8 +87,7 @@ FMI_TYPES = {
     'Binary': 12,
     'Clock': 13,
 
-    # TODO: FMI3.0 spec 2.2.7.2 specifies Enumeration should be Int64
-    'Enumeration': 6,
+    'Enumeration': 8,
 
     # Aliases for FMI 1.0 and 2.0
     'Real': 1,

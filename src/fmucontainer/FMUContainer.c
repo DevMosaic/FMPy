@@ -44,7 +44,21 @@ static DWORD WINAPI instanceDoStep(LPVOID lpParam) {
         }
 
         if (c->doStep) {
-            c->status = FMI2DoStep(c->instance, c->currentCommunicationPoint, c->communicationStepSize, fmi2True);
+            switch (c->instance->fmiMajorVersion) {
+            case FMIMajorVersion2:
+                c->status = FMI2DoStep(c->instance, c->currentCommunicationPoint, c->communicationStepSize, c->noSetFMUStatePriorToCurrentPoint);
+                break;
+            case FMIMajorVersion3: ;
+                fmi3Boolean eventHandlingNeeded;
+                fmi3Boolean terminateSimulation;
+                fmi3Boolean earlyReturn;
+                fmi3Float64 lastSuccessfulTime;
+    
+                c->status = FMI3DoStep(c->instance, c->currentCommunicationPoint, c->communicationStepSize, c->noSetFMUStatePriorToCurrentPoint, &eventHandlingNeeded, &terminateSimulation, &earlyReturn, &lastSuccessfulTime);
+                break;
+            default:
+                break;
+            }
             c->doStep = false;
         }
 
@@ -67,7 +81,21 @@ static void* instanceDoStep(void *arg) {
         }
 
         if (c->doStep) {
-            c->status = FMI2DoStep(c->instance, c->currentCommunicationPoint, c->communicationStepSize, fmi2True);
+            switch (c->instance->fmiMajorVersion) {
+            case FMIMajorVersion2:
+                c->status = FMI2DoStep(c->instance, c->currentCommunicationPoint, c->communicationStepSize, c->noSetFMUStatePriorToCurrentPoint);
+                break;
+            case FMIMajorVersion3: ;
+                fmi3Boolean eventHandlingNeeded;
+                fmi3Boolean terminateSimulation;
+                fmi3Boolean earlyReturn;
+                fmi3Float64 lastSuccessfulTime;
+    
+                c->status = FMI3DoStep(c->instance, c->currentCommunicationPoint, c->communicationStepSize, c->noSetFMUStatePriorToCurrentPoint, &eventHandlingNeeded, &terminateSimulation, &earlyReturn, &lastSuccessfulTime);
+                break;
+            default:
+                break;
+            }
             c->doStep = false;
         }
 
@@ -152,7 +180,7 @@ static void logFunctionCall(FMIInstance *instance, FMIStatus status, const char 
 FMIStatus getVariable(
     FMIInstance *instance,
     FMIVariableType variableType,
-    const void* valueReference,
+    const FMIValueReference* valueReference,
     void* value) {
 
     FMIStatus status = FMIOK;
@@ -191,13 +219,19 @@ FMIStatus getVariable(
     case FMIInt32Type:
         switch (instance->fmiMajorVersion) {
         case FMIMajorVersion2: ;
+            {
             fmi2Integer v;
             CHECK_STATUS(FMI2GetInteger(instance, valueReference, 1, &v));
-            *((fmi3Int32 *) value) = (fmi3Int32) v;
+            *((fmi3Int64 *) value) = (fmi3Int64) v;
             break;
+            }
         case FMIMajorVersion3:
-            CHECK_STATUS(FMI3GetInt32(instance, valueReference, 1, value, 1));
+            {
+            fmi3Int32 v;
+            CHECK_STATUS(FMI3GetInt32(instance, valueReference, 1, &v, 1));
+            *((fmi3Int64 *) value) = (fmi3Int64) v;
             break;
+            }
         default:
             status = FMIError;
             break;
@@ -207,7 +241,19 @@ FMIStatus getVariable(
         CHECK_STATUS(FMI3GetUInt32(instance, valueReference, 1, value, 1));
         break;
     case FMIInt64Type:
-        CHECK_STATUS(FMI3GetInt64(instance, valueReference, 1, value, 1));
+        switch (instance->fmiMajorVersion) {
+        case FMIMajorVersion2: ;
+            fmi2Integer v;
+            CHECK_STATUS(FMI2GetInteger(instance, valueReference, 1, &v));
+            *((fmi3Int64 *) value) = (fmi3Int64) v;
+            break;
+        case FMIMajorVersion3:
+            CHECK_STATUS(FMI3GetInt64(instance, valueReference, 1, value, 1));
+            break;
+        default:
+            status = FMIError;
+            break;
+        }
         break;
     case FMIUInt64Type:
         CHECK_STATUS(FMI3GetUInt64(instance, valueReference, 1, value, 1));
@@ -296,12 +342,17 @@ FMIStatus setVariable(
     case FMIInt32Type:
         switch (instance->fmiMajorVersion) {
         case FMIMajorVersion2: ;
-            fmi2Integer v = *((fmi3Int32 *) value);
+            {
+            fmi2Integer v = *((fmi3Int64 *) value);
             CHECK_STATUS(FMI2SetInteger(instance, valueReference, 1, &v));
             break;
+            }
         case FMIMajorVersion3:
-            CHECK_STATUS(FMI3SetInt32(instance, valueReference, 1, value, 1));
+            {
+            fmi3Int32 v = (fmi3Int32) *((fmi3Int64 *) value);
+            CHECK_STATUS(FMI3SetInt32(instance, valueReference, 1, &v, 1));
             break;
+            }
         default:
             status = FMIError;
             break;
@@ -311,7 +362,18 @@ FMIStatus setVariable(
         CHECK_STATUS(FMI3SetUInt32(instance, valueReference, 1, value, 1));
         break;
     case FMIInt64Type:
-        CHECK_STATUS(FMI3SetInt64(instance, valueReference, 1, value, 1));
+        switch (instance->fmiMajorVersion) {
+        case FMIMajorVersion2: ;
+            fmi2Integer v = *((fmi3Int64 *) value);
+            CHECK_STATUS(FMI2SetInteger(instance, valueReference, 1, &v));
+            break;
+        case FMIMajorVersion3:
+            CHECK_STATUS(FMI3SetInt64(instance, valueReference, 1, value, 1));
+            break;
+        default:
+            status = FMIError;
+            break;
+        }
         break;
     case FMIUInt64Type:
         CHECK_STATUS(FMI3SetUInt64(instance, valueReference, 1, value, 1));
@@ -573,6 +635,11 @@ System* instantiateSystem(
                     status = setVariable(m, variableType, &vr, &value);
                     break;
                 }
+                case FMIInt64Type: {
+                    const fmi3Int64 value = mpack_node_int(start);
+                    status = setVariable(m, variableType, &vr, &value);
+                    break;
+                }
                 case FMIBooleanType: {
                     const fmi3Boolean value = mpack_node_bool(start);
                     status = setVariable(m, variableType, &vr, &value);
@@ -591,7 +658,7 @@ System* instantiateSystem(
                     break;
                 }
 
-                if (status > fmi2Warning) {
+                if (status > FMIWarning) {
                     return NULL;
                 }
             }
@@ -646,6 +713,7 @@ FMIStatus doStep(
 #endif
             component->currentCommunicationPoint = currentCommunicationPoint;
             component->communicationStepSize = communicationStepSize;
+            component->noSetFMUStatePriorToCurrentPoint = noSetFMUStatePriorToCurrentPoint;
             component->doStep = true;
 #ifdef _WIN32
             ReleaseMutex(component->mutex);
