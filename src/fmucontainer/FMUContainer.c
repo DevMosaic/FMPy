@@ -44,7 +44,21 @@ static DWORD WINAPI instanceDoStep(LPVOID lpParam) {
         }
 
         if (c->doStep) {
-            c->status = FMI2DoStep(c->instance, c->currentCommunicationPoint, c->communicationStepSize, fmi2True);
+            switch (c->instance->fmiMajorVersion) {
+            case FMIMajorVersion2:
+                c->status = FMI2DoStep(c->instance, c->currentCommunicationPoint, c->communicationStepSize, c->noSetFMUStatePriorToCurrentPoint);
+                break;
+            case FMIMajorVersion3: ;
+                fmi3Boolean eventHandlingNeeded;
+                fmi3Boolean terminateSimulation;
+                fmi3Boolean earlyReturn;
+                fmi3Float64 lastSuccessfulTime;
+    
+                c->status = FMI3DoStep(c->instance, c->currentCommunicationPoint, c->communicationStepSize, c->noSetFMUStatePriorToCurrentPoint, &eventHandlingNeeded, &terminateSimulation, &earlyReturn, &lastSuccessfulTime);
+                break;
+            default:
+                break;
+            }
             c->doStep = false;
         }
 
