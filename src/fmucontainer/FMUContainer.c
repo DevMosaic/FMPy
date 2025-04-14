@@ -222,16 +222,12 @@ FMIStatus getVariable(
             {
             fmi2Integer v;
             CHECK_STATUS(FMI2GetInteger(instance, valueReference, 1, &v));
-            *((fmi3Int64 *) value) = (fmi3Int64) v;
+            *((fmi3Int32 *) value) = (fmi3Int32) v;
             break;
             }
         case FMIMajorVersion3:
-            {
-            fmi3Int32 v;
-            CHECK_STATUS(FMI3GetInt32(instance, valueReference, 1, &v, 1));
-            *((fmi3Int64 *) value) = (fmi3Int64) v;
+            CHECK_STATUS(FMI3GetInt32(instance, valueReference, 1, value, 1));
             break;
-            }
         default:
             status = FMIError;
             break;
@@ -301,6 +297,9 @@ END:
     return status;
 }
 
+/*
+ * `value` should be Float64, Int64, UInt64, Boolean, or String.
+ */
 FMIStatus setVariable(
     FMIInstance *instance,
     FMIVariableType variableType,
@@ -343,14 +342,13 @@ FMIStatus setVariable(
         switch (instance->fmiMajorVersion) {
         case FMIMajorVersion2: ;
             {
-            fmi2Integer v = *((fmi3Int64 *) value);
+            fmi2Integer v = (fmi2Integer) *((fmi3Int32 *) value);
             CHECK_STATUS(FMI2SetInteger(instance, valueReference, 1, &v));
             break;
             }
         case FMIMajorVersion3:
             {
-            fmi3Int32 v = (fmi3Int32) *((fmi3Int64 *) value);
-            CHECK_STATUS(FMI3SetInt32(instance, valueReference, 1, &v, 1));
+            CHECK_STATUS(FMI3SetInt32(instance, valueReference, 1, value, 1));
             break;
             }
         default:
@@ -364,7 +362,7 @@ FMIStatus setVariable(
     case FMIInt64Type:
         switch (instance->fmiMajorVersion) {
         case FMIMajorVersion2: ;
-            fmi2Integer v = *((fmi3Int64 *) value);
+            fmi2Integer v = (fmi2Integer) *((fmi3Int64 *) value);
             CHECK_STATUS(FMI2SetInteger(instance, valueReference, 1, &v));
             break;
         case FMIMajorVersion3:
@@ -381,7 +379,7 @@ FMIStatus setVariable(
     case FMIBooleanType:
         switch (instance->fmiMajorVersion) {
         case FMIMajorVersion2: ;
-            fmi2Boolean v = *((fmi3Boolean *) value);
+            fmi2Boolean v = (fmi2Boolean) *((fmi3Boolean *) value);
             CHECK_STATUS(FMI2SetBoolean(instance, valueReference, 1, &v));
             break;
         case FMIMajorVersion3:
