@@ -729,7 +729,7 @@ FMIStatus doStep(
                 pthread_mutex_lock(&component->mutex);
 #endif
                 waitForThread = component->doStep;
-                status = component->status;
+                status = status > component->status ? status : component->status;
 #ifdef _WIN32
                 ReleaseMutex(component->mutex);
 #else

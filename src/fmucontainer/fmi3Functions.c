@@ -15,6 +15,8 @@
 #define NOT_IMPLEMENTED \
     return fmi3Error
 
+#define CHECK_STATUS(S) status = S; if (status > FMIWarning) goto END
+
 #define GET_VARIABLES(T) \
 GET_SYSTEM; \
 for (size_t i = 0; i < nValueReferences; i++) { \
@@ -25,8 +27,9 @@ for (size_t i = 0; i < nValueReferences; i++) { \
     } \
     VariableMapping vm = s->variables[j]; \
     FMIInstance* m = s->components[vm.ci[0]]->instance; \
-    status = getVariable(m, FMI ## T ## Type, &(vm.vr[0]), &values[i]); \
+    CHECK_STATUS(getVariable(m, FMI ## T ## Type, &(vm.vr[0]), &values[i])); \
 } \
+END: \
 return status; \
 
 #define SET_VARIABLES(T) \
@@ -38,8 +41,9 @@ for (size_t i = 0; i < nValueReferences; i++) { \
     } \
     VariableMapping vm = s->variables[j]; \
     FMIInstance* m = s->components[vm.ci[0]]->instance; \
-    status = setVariable(m, FMI ## T ## Type, &(vm.vr[0]), &values[i]); \
+    CHECK_STATUS(setVariable(m, FMI ## T ## Type, &(vm.vr[0]), &values[i])); \
 } \
+END: \
 return status; \
 
 const char* fmi3GetVersion(void) {
@@ -117,17 +121,18 @@ fmi3Status fmi3EnterInitializationMode(fmi3Instance instance,
         FMIInstance* m = s->components[i]->instance;
         switch (m->fmiMajorVersion) {
         case FMIMajorVersion2:
-            status = FMI2SetupExperiment(m, toleranceDefined, tolerance, startTime, stopTimeDefined, stopTime);
-            status = FMI2EnterInitializationMode(m);
+            CHECK_STATUS(FMI2SetupExperiment(m, toleranceDefined, tolerance, startTime, stopTimeDefined, stopTime));
+            CHECK_STATUS(FMI2EnterInitializationMode(m));
             break;
         case FMIMajorVersion3:
-            status = FMI3EnterInitializationMode(m, toleranceDefined, tolerance, startTime, stopTimeDefined, stopTime);
+            CHECK_STATUS(FMI3EnterInitializationMode(m, toleranceDefined, tolerance, startTime, stopTimeDefined, stopTime));
             break;
         default:
             break;
         }
     }
 
+END:
     return status;
 }
 
@@ -139,16 +144,17 @@ fmi3Status fmi3ExitInitializationMode(fmi3Instance instance) {
         FMIInstance* m = s->components[i]->instance;
         switch (m->fmiMajorVersion) {
         case FMIMajorVersion2:
-            status = FMI2ExitInitializationMode(m);
+            CHECK_STATUS(FMI2ExitInitializationMode(m));
             break;
         case FMIMajorVersion3:
-            status = FMI3ExitInitializationMode(m);
+            CHECK_STATUS(FMI3ExitInitializationMode(m));
             break;
         default:
             break;
         }
     }
 
+END:
     return status;
 }
 
@@ -162,13 +168,14 @@ fmi3Status fmi3EnterEventMode(fmi3Instance instance) {
         case FMIMajorVersion2:
             break;
         case FMIMajorVersion3:
-            status = FMI3EnterEventMode(m);
+            CHECK_STATUS(FMI3EnterEventMode(m));
             break;
         default:
             break;
         }
     }
 
+END:
     return status;
 }
 
@@ -220,9 +227,10 @@ fmi3Status fmi3GetFloat64(fmi3Instance instance,
 
         VariableMapping vm = s->variables[j];
         FMIInstance* m = s->components[vm.ci[0]]->instance;
-        status = getVariable(m, FMIFloat64Type, &(vm.vr[0]), &values[i]);
+        CHECK_STATUS(getVariable(m, FMIFloat64Type, &(vm.vr[0]), &values[i]));
     }
 
+END:
     return status;
 }
 
@@ -678,13 +686,14 @@ fmi3Status fmi3EnterStepMode(fmi3Instance instance) {
         case FMIMajorVersion2:
             break;
         case FMIMajorVersion3:
-            status = FMI3EnterStepMode(m);
+            CHECK_STATUS(FMI3EnterStepMode(m));
             break;
         default:
             break;
         }
     }
 
+END:
     return status;
 }
 
