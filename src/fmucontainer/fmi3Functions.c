@@ -15,6 +15,36 @@
 #define NOT_IMPLEMENTED \
     return fmi3Error
 
+#define CHECK_STATUS(S) status = S; if (status > FMIWarning) goto END
+
+#define GET_VARIABLES(T) \
+GET_SYSTEM; \
+for (size_t i = 0; i < nValueReferences; i++) { \
+    const fmi3ValueReference vr = valueReferences[i]; \
+    const size_t j = vr - 1; \
+    if (j >= s->nVariables) { \
+        return FMIError; \
+    } \
+    VariableMapping vm = s->variables[j]; \
+    FMIInstance* m = s->components[vm.ci[0]]->instance; \
+    CHECK_STATUS(getVariable(m, FMI ## T ## Type, &(vm.vr[0]), &values[i])); \
+} \
+END: \
+return status; \
+
+#define SET_VARIABLES(T) \
+GET_SYSTEM; \
+for (size_t i = 0; i < nValueReferences; i++) { \
+    const size_t j = valueReferences[i] - 1; \
+    if (j >= s->nVariables) { \
+        return FMIError; \
+    } \
+    VariableMapping vm = s->variables[j]; \
+    FMIInstance* m = s->components[vm.ci[0]]->instance; \
+    CHECK_STATUS(setVariable(m, FMI ## T ## Type, &(vm.vr[0]), &values[i])); \
+} \
+END: \
+return status; \
 
 const char* fmi3GetVersion(void) {
     return fmi3Version;
@@ -91,17 +121,18 @@ fmi3Status fmi3EnterInitializationMode(fmi3Instance instance,
         FMIInstance* m = s->components[i]->instance;
         switch (m->fmiMajorVersion) {
         case FMIMajorVersion2:
-            status = FMI2SetupExperiment(m, toleranceDefined, tolerance, startTime, stopTimeDefined, stopTime);
-            status = FMI2EnterInitializationMode(m);
+            CHECK_STATUS(FMI2SetupExperiment(m, toleranceDefined, tolerance, startTime, stopTimeDefined, stopTime));
+            CHECK_STATUS(FMI2EnterInitializationMode(m));
             break;
         case FMIMajorVersion3:
-            status = FMI3EnterInitializationMode(m, toleranceDefined, tolerance, startTime, stopTimeDefined, stopTime);
+            CHECK_STATUS(FMI3EnterInitializationMode(m, toleranceDefined, tolerance, startTime, stopTimeDefined, stopTime));
             break;
         default:
             break;
         }
     }
 
+END:
     return status;
 }
 
@@ -113,16 +144,17 @@ fmi3Status fmi3ExitInitializationMode(fmi3Instance instance) {
         FMIInstance* m = s->components[i]->instance;
         switch (m->fmiMajorVersion) {
         case FMIMajorVersion2:
-            status = FMI2ExitInitializationMode(m);
+            CHECK_STATUS(FMI2ExitInitializationMode(m));
             break;
         case FMIMajorVersion3:
-            status = FMI3ExitInitializationMode(m);
+            CHECK_STATUS(FMI3ExitInitializationMode(m));
             break;
         default:
             break;
         }
     }
 
+END:
     return status;
 }
 
@@ -136,13 +168,14 @@ fmi3Status fmi3EnterEventMode(fmi3Instance instance) {
         case FMIMajorVersion2:
             break;
         case FMIMajorVersion3:
-            status = FMI3EnterEventMode(m);
+            CHECK_STATUS(FMI3EnterEventMode(m));
             break;
         default:
             break;
         }
     }
 
+END:
     return status;
 }
 
@@ -165,7 +198,8 @@ fmi3Status fmi3GetFloat32(fmi3Instance instance,
     size_t nValueReferences,
     fmi3Float32 values[],
     size_t nValues) {
-    return fmi3Error;
+    
+    GET_VARIABLES(Float32);
 }
 
 fmi3Status fmi3GetFloat64(fmi3Instance instance,
@@ -193,9 +227,10 @@ fmi3Status fmi3GetFloat64(fmi3Instance instance,
 
         VariableMapping vm = s->variables[j];
         FMIInstance* m = s->components[vm.ci[0]]->instance;
-        status = getVariable(m, FMIFloat64Type, &(vm.vr[0]), &values[i]);
+        CHECK_STATUS(getVariable(m, FMIFloat64Type, &(vm.vr[0]), &values[i]));
     }
 
+END:
     return status;
 }
 
@@ -204,7 +239,8 @@ fmi3Status fmi3GetInt8(fmi3Instance instance,
     size_t nValueReferences,
     fmi3Int8 values[],
     size_t nValues) {
-    NOT_IMPLEMENTED;
+
+    GET_VARIABLES(Int8);
 }
 
 fmi3Status fmi3GetUInt8(fmi3Instance instance,
@@ -212,7 +248,8 @@ fmi3Status fmi3GetUInt8(fmi3Instance instance,
     size_t nValueReferences,
     fmi3UInt8 values[],
     size_t nValues) {
-    NOT_IMPLEMENTED;
+
+    GET_VARIABLES(UInt8);
 }
 
 fmi3Status fmi3GetInt16(fmi3Instance instance,
@@ -220,7 +257,8 @@ fmi3Status fmi3GetInt16(fmi3Instance instance,
     size_t nValueReferences,
     fmi3Int16 values[],
     size_t nValues) {
-    NOT_IMPLEMENTED;
+
+    GET_VARIABLES(Int16);
 }
 
 fmi3Status fmi3GetUInt16(fmi3Instance instance,
@@ -228,7 +266,8 @@ fmi3Status fmi3GetUInt16(fmi3Instance instance,
     size_t nValueReferences,
     fmi3UInt16 values[],
     size_t nValues) {
-    NOT_IMPLEMENTED;
+
+    GET_VARIABLES(UInt16);
 }
 
 fmi3Status fmi3GetInt32(fmi3Instance instance,
@@ -237,24 +276,7 @@ fmi3Status fmi3GetInt32(fmi3Instance instance,
     fmi3Int32 values[],
     size_t nValues) {
 
-    GET_SYSTEM;
-
-    for (size_t i = 0; i < nValueReferences; i++) {
-
-        const fmi3ValueReference vr = valueReferences[i];
-
-        const size_t j = vr - 1;
-
-        if (j >= s->nVariables) {
-            return FMIError;
-        }
-
-        VariableMapping vm = s->variables[j];
-        FMIInstance* m = s->components[vm.ci[0]]->instance;
-        status = getVariable(m, FMIInt32Type, &(vm.vr[0]), &values[i]);
-    }
-
-    return status;
+    GET_VARIABLES(Int32);
 }
 
 fmi3Status fmi3GetUInt32(fmi3Instance instance,
@@ -262,7 +284,8 @@ fmi3Status fmi3GetUInt32(fmi3Instance instance,
     size_t nValueReferences,
     fmi3UInt32 values[],
     size_t nValues) {
-    NOT_IMPLEMENTED;
+
+    GET_VARIABLES(UInt32);
 }
 
 fmi3Status fmi3GetInt64(fmi3Instance instance,
@@ -271,24 +294,7 @@ fmi3Status fmi3GetInt64(fmi3Instance instance,
     fmi3Int64 values[],
     size_t nValues) {
 
-    GET_SYSTEM;
-
-    for (size_t i = 0; i < nValueReferences; i++) {
-
-        const fmi3ValueReference vr = valueReferences[i];
-
-        const size_t j = vr - 1;
-
-        if (j >= s->nVariables) {
-            return FMIError;
-        }
-
-        VariableMapping vm = s->variables[j];
-        FMIInstance* m = s->components[vm.ci[0]]->instance;
-        status = getVariable(m, FMIInt64Type, &(vm.vr[0]), &values[i]);
-    }
-
-    return status;
+    GET_VARIABLES(Int64);
 }
 
 fmi3Status fmi3GetUInt64(fmi3Instance instance,
@@ -296,7 +302,8 @@ fmi3Status fmi3GetUInt64(fmi3Instance instance,
     size_t nValueReferences,
     fmi3UInt64 values[],
     size_t nValues) {
-    NOT_IMPLEMENTED;
+
+    GET_VARIABLES(UInt64);
 }
 
 fmi3Status fmi3GetBoolean(fmi3Instance instance,
@@ -305,24 +312,7 @@ fmi3Status fmi3GetBoolean(fmi3Instance instance,
     fmi3Boolean values[],
     size_t nValues) {
 
-    GET_SYSTEM;
-
-    for (size_t i = 0; i < nValueReferences; i++) {
-
-        const fmi3ValueReference vr = valueReferences[i];
-
-        const size_t j = vr - 1;
-
-        if (j >= s->nVariables) {
-            return FMIError;
-        }
-
-        VariableMapping vm = s->variables[j];
-        FMIInstance* m = s->components[vm.ci[0]]->instance;
-        status = getVariable(m, FMIBooleanType, &(vm.vr[0]), &values[i]);
-    }
-
-    return status;
+    GET_VARIABLES(Boolean);
 }
 
 fmi3Status fmi3GetString(fmi3Instance instance,
@@ -330,7 +320,8 @@ fmi3Status fmi3GetString(fmi3Instance instance,
     size_t nValueReferences,
     fmi3String values[],
     size_t nValues) {
-    NOT_IMPLEMENTED;
+
+    GET_VARIABLES(String);
 }
 
 fmi3Status fmi3GetBinary(fmi3Instance instance,
@@ -354,7 +345,8 @@ fmi3Status fmi3SetFloat32(fmi3Instance instance,
     size_t nValueReferences,
     const fmi3Float32 values[],
     size_t nValues) {
-    NOT_IMPLEMENTED;
+
+    SET_VARIABLES(Float32);
 }
 
 fmi3Status fmi3SetFloat64(fmi3Instance instance,
@@ -363,22 +355,7 @@ fmi3Status fmi3SetFloat64(fmi3Instance instance,
     const fmi3Float64 values[],
     size_t nValues) {
 
-    GET_SYSTEM;
-
-    for (size_t i = 0; i < nValueReferences; i++) {
-
-        const size_t j = valueReferences[i] - 1;
-
-        if (j >= s->nVariables) {
-            return FMIError;
-        }
-
-        VariableMapping vm = s->variables[j];
-        FMIInstance* m = s->components[vm.ci[0]]->instance;
-        status = setVariable(m, FMIFloat64Type, &(vm.vr[0]), &values[i]);
-    }
-
-    return status;
+    SET_VARIABLES(Float64);
 }
 
 fmi3Status fmi3SetInt8(fmi3Instance instance,
@@ -386,7 +363,8 @@ fmi3Status fmi3SetInt8(fmi3Instance instance,
     size_t nValueReferences,
     const fmi3Int8 values[],
     size_t nValues) {
-    NOT_IMPLEMENTED;
+
+    SET_VARIABLES(Int8);
 }
 
 fmi3Status fmi3SetUInt8(fmi3Instance instance,
@@ -394,15 +372,17 @@ fmi3Status fmi3SetUInt8(fmi3Instance instance,
     size_t nValueReferences,
     const fmi3UInt8 values[],
     size_t nValues) {
-    NOT_IMPLEMENTED;
+
+    SET_VARIABLES(UInt8);
 }
 
 fmi3Status fmi3SetInt16(fmi3Instance instance,
     const fmi3ValueReference valueReferences[],
     size_t nValueReferences,
     const fmi3Int16 values[],
-    size_t nValues) {
-    NOT_IMPLEMENTED;
+size_t nValues) {
+
+    SET_VARIABLES(Int16);
 }
 
 fmi3Status fmi3SetUInt16(fmi3Instance instance,
@@ -410,7 +390,8 @@ fmi3Status fmi3SetUInt16(fmi3Instance instance,
     size_t nValueReferences,
     const fmi3UInt16 values[],
     size_t nValues) {
-    NOT_IMPLEMENTED;
+
+    SET_VARIABLES(UInt16);
 }
 
 fmi3Status fmi3SetInt32(fmi3Instance instance,
@@ -419,22 +400,7 @@ fmi3Status fmi3SetInt32(fmi3Instance instance,
     const fmi3Int32 values[],
     size_t nValues) {
 
-    GET_SYSTEM;
-
-    for (size_t i = 0; i < nValueReferences; i++) {
-
-        const size_t j = valueReferences[i] - 1;
-
-        if (j >= s->nVariables) {
-            return FMIError;
-        }
-
-        VariableMapping vm = s->variables[j];
-        FMIInstance* m = s->components[vm.ci[0]]->instance;
-        status = setVariable(m, FMIInt32Type, &(vm.vr[0]), &values[i]);
-    }
-
-    return status;
+    SET_VARIABLES(Int32);
 }
 
 fmi3Status fmi3SetUInt32(fmi3Instance instance,
@@ -442,7 +408,8 @@ fmi3Status fmi3SetUInt32(fmi3Instance instance,
     size_t nValueReferences,
     const fmi3UInt32 values[],
     size_t nValues) {
-    NOT_IMPLEMENTED;
+
+    SET_VARIABLES(UInt32);
 }
 
 fmi3Status fmi3SetInt64(fmi3Instance instance,
@@ -451,22 +418,7 @@ fmi3Status fmi3SetInt64(fmi3Instance instance,
     const fmi3Int64 values[],
     size_t nValues) {
 
-    GET_SYSTEM;
-
-    for (size_t i = 0; i < nValueReferences; i++) {
-
-        const size_t j = valueReferences[i] - 1;
-
-        if (j >= s->nVariables) {
-            return FMIError;
-        }
-
-        VariableMapping vm = s->variables[j];
-        FMIInstance* m = s->components[vm.ci[0]]->instance;
-        status = setVariable(m, FMIInt64Type, &(vm.vr[0]), &values[i]);
-    }
-
-    return status;
+    SET_VARIABLES(Int64);
 }
 
 fmi3Status fmi3SetUInt64(fmi3Instance instance,
@@ -474,7 +426,8 @@ fmi3Status fmi3SetUInt64(fmi3Instance instance,
     size_t nValueReferences,
     const fmi3UInt64 values[],
     size_t nValues) {
-    NOT_IMPLEMENTED;
+
+    SET_VARIABLES(UInt64);
 }
 
 fmi3Status fmi3SetBoolean(fmi3Instance instance,
@@ -483,23 +436,7 @@ fmi3Status fmi3SetBoolean(fmi3Instance instance,
     const fmi3Boolean values[],
     size_t nValues) {
 
-    GET_SYSTEM;
-
-    for (size_t i = 0; i < nValueReferences; i++) {
-
-        const size_t j = valueReferences[i] - 1;
-
-        if (j >= s->nVariables) {
-            return FMIError;
-        }
-
-        VariableMapping vm = s->variables[j];
-        FMIInstance* m = s->components[vm.ci[0]]->instance;
-
-        status = setVariable(m, FMIBooleanType, &(vm.vr[0]), &values[i]);
-    }
-
-    return status;
+    SET_VARIABLES(Boolean);
 }
 
 fmi3Status fmi3SetString(fmi3Instance instance,
@@ -507,7 +444,8 @@ fmi3Status fmi3SetString(fmi3Instance instance,
     size_t nValueReferences,
     const fmi3String values[],
     size_t nValues) {
-    NOT_IMPLEMENTED;
+
+    SET_VARIABLES(String);
 }
 
 fmi3Status fmi3SetBinary(fmi3Instance instance,
@@ -748,13 +686,14 @@ fmi3Status fmi3EnterStepMode(fmi3Instance instance) {
         case FMIMajorVersion2:
             break;
         case FMIMajorVersion3:
-            status = FMI3EnterStepMode(m);
+            CHECK_STATUS(FMI3EnterStepMode(m));
             break;
         default:
             break;
         }
     }
 
+END:
     return status;
 }
 
@@ -764,7 +703,10 @@ fmi3Status fmi3GetOutputDerivatives(fmi3Instance instance,
     const fmi3Int32 orders[],
     fmi3Float64 values[],
     size_t nValues) {
-    NOT_IMPLEMENTED;
+    if (nValueReferences > 0 || nValues > 0) {
+        return FMIError;
+    }
+    return FMIOK;
 }
 
 fmi3Status fmi3DoStep(fmi3Instance instance,
