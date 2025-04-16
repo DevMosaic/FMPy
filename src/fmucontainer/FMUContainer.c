@@ -297,9 +297,6 @@ END:
     return status;
 }
 
-/*
- * `value` should be Float64, Int64, UInt64, Boolean, or String.
- */
 FMIStatus setVariable(
     FMIInstance *instance,
     FMIVariableType variableType,
